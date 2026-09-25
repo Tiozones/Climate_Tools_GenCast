@@ -116,9 +116,7 @@
             minZoom: 7, 
             maxBounds: kansasBounds, 
             maxBoundsViscosity: 1.0,
-            // THE MAGIC FIX: Forces Leaflet to use Canvas instead of SVG.
-            // This perfectly solves the circle resizing issue during zoom animations!
-            preferCanvas: true 
+            preferCanvas: true // Fixed the issue where circles get distorted on zoom
         });
 
         // Background dark map
@@ -127,21 +125,28 @@
             maxZoom: 19 
         }).addTo(map);
 
-        // Kansas polygon clipping
-        fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+        // ==========================================
+        // 2. HIGH RESOLUTION GEOJSON FOR KANSAS
+        // ==========================================
+        // We use a high-res (5m) GeoJSON to perfectly trace the Missouri River curves
+        fetch('https://raw.githubusercontent.com/kjhealy/us-county/master/data/geojson/gz_2010_us_040_00_5m.json')
             .then(response => response.json())
             .then(data => {
-                var kansasFeature = data.features.find(f => f.properties.name === 'Kansas');
+                // In this specific dataset, the property name is 'NAME' (all caps)
+                var kansasFeature = data.features.find(f => f.properties.NAME === 'Kansas');
                 var osmUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
                 
+                // Mask the outside
                 L.TileLayer.boundaryCanvas(osmUrl, { boundary: kansasFeature, attribution: '&copy; OpenStreetMap' }).addTo(map);
+                
+                // Draw the detailed golden border
                 L.geoJSON(kansasFeature, { style: { color: '#ffd700', weight: 4, fill: false, opacity: 1 } }).addTo(map);
                 
                 addStations();
             });
 
         // ==========================================
-        // 2. STATION LOGIC & MARKERS
+        // 3. STATION LOGIC & MARKERS
         // ==========================================
         var markers = {}; 
 
@@ -159,10 +164,9 @@
         }
 
         // ==========================================
-        // 3. USER INTERFACE (UI) FUNCTIONS
+        // 4. USER INTERFACE (UI) FUNCTIONS
         // ==========================================
         
-        // Expand/Collapse the station list
         function toggleList() {
             var list = document.getElementById("station-list");
             var arrow = document.getElementById("arrow");
@@ -175,7 +179,6 @@
             }
         }
 
-        // Fly to station selected from the list
         function goToStation(name) {
             var marker = markers[name];
             if(marker) {
@@ -184,7 +187,6 @@
             }
         }
 
-        // Fly to user-input coordinates
         function searchCoordinates() {
             var lat = parseFloat(document.getElementById("input-lat").value);
             var lon = parseFloat(document.getElementById("input-lon").value);
@@ -197,7 +199,6 @@
             }
         }
 
-        // Use Native HTML5 Geolocation (GPS)
         function useMyLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function(position) {
