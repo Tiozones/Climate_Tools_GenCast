@@ -3,28 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kansas GenCast & Mesonet Dashboard</title>
+    <title>Kansas Mesonet Dashboard</title>
     
-    <!-- Importando o CSS do Leaflet (Estilos do Mapa) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Estilos customizados para deixar o visual Premium -->
     <style>
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            background-color: #121212; /* Fundo escuro para combinar com o mapa */
+            background-color: #121212; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
-        /* O mapa vai ocupar a tela inteira */
         #map {
             width: 100%;
             height: 100vh; 
+            /* Se a internet demorar a carregar o mapa, o fundo fica escuro em vez de branco */
+            background-color: #121212; 
         }
 
-        /* Estilizando a caixinha de informação (Popup) */
         .leaflet-popup-content-wrapper {
             background: #1e1e1e;
             color: #ffffff;
@@ -46,62 +44,72 @@
 </head>
 <body>
 
-    <!-- A div onde o mapa será desenhado -->
     <div id="map"></div>
 
-    <!-- Importando o JavaScript do Leaflet (Motor do Mapa) -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
-        // 1. INICIALIZANDO O MAPA
-        // Coordenadas centrais do Kansas (Lat: 38.5, Lon: -98.0) e Zoom inicial de 7
-        var map = L.map('map').setView([38.5, -98.0], 7);
+        // 1. DEFININDO OS LIMITES DO KANSAS (Bounding Box)
+        // Coordenadas aproximadas do canto Sudoeste e Nordeste do estado
+        var kansasBounds = [
+            [36.9, -102.1], // SW (Sudoeste)
+            [40.1, -94.5]   // NE (Nordeste)
+        ];
 
-        // 2. ADICIONANDO O TEMA ESCURO (Esri Dark Gray)
+        // 2. INICIALIZANDO O MAPA COM TRAVAS
+        var map = L.map('map', {
+            center: [38.5, -98.0],
+            zoom: 7,
+            minZoom: 7, // Trava: O usuário não consegue afastar mais que isso
+            maxBounds: kansasBounds, // Trava: O usuário não consegue arrastar pra fora do estado
+            maxBoundsViscosity: 1.0  // Efeito de "parede invisível" ao bater na borda
+        });
+
+        // 3. MAPA DE FUNDO (Esri Dark Gray)
+        // Mantém o cinza noturno estático, mas revela rodovias ao dar zoom
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-            maxZoom: 16,
-            minZoom: 4
+            maxZoom: 16
         }).addTo(map);
 
-        // 3. ESTILO DOS PONTOS (Estações)
+        // 4. DESENHANDO A SOMBRA AMARELA NO KANSAS
+        // Puxamos um arquivo público com o desenho de todos os estados dos EUA
+        fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
+            .then(response => response.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    // Filtramos para usar apenas a geometria do Kansas
+                    filter: function(feature) {
+                        return feature.properties.name === 'Kansas';
+                    },
+                    // Estilo da "Máscara"
+                    style: {
+                        color: '#ffd700',      // Cor da linha da fronteira (Dourado/Amarelo)
+                        weight: 2,             // Espessura da linha
+                        fillColor: '#ffd700',  // Cor do preenchimento interno
+                        fillOpacity: 0.15      // Nível de transparência (0.15 deixa ver as estradas de fundo)
+                    }
+                }).addTo(map);
+            });
+
+        // 5. ESTILO E ADIÇÃO DOS PONTOS (Mesonet)
         var markerStyle = {
             radius: 8,
-            fillColor: "#ff0000", // Vermelho vibrante
-            color: "#ffcccc",     // Borda clarinha
+            fillColor: "#ff0000", 
+            color: "#ffcccc",     
             weight: 1,
             opacity: 1,
-            fillOpacity: 0.8
+            fillOpacity: 0.9
         };
-
-        // 4. ADICIONANDO ESTAÇÕES MESONET (Exemplos)
         
-        // Estação Manhattan, KS
         var stationManhattan = L.circleMarker([39.208, -96.592], markerStyle).addTo(map);
-        stationManhattan.bindPopup(`
-            <h3 class="popup-title">Manhattan Mesonet</h3>
-            <b>Temp:</b> 22°C <br>
-            <b>Precipitação:</b> 0.0 mm <br>
-            <i>Mais dados em breve...</i>
-        `);
+        stationManhattan.bindPopup('<h3 class="popup-title">Manhattan Mesonet</h3><b>Temp:</b> 22°C <br><b>Precip:</b> 0.0 mm');
 
-        // Estação Colby, KS (Apenas para ter mais de um ponto na tela)
         var stationColby = L.circleMarker([39.395, -101.060], markerStyle).addTo(map);
-        stationColby.bindPopup(`
-            <h3 class="popup-title">Colby Mesonet</h3>
-            <b>Temp:</b> 19°C <br>
-            <b>Precipitação:</b> 2.5 mm <br>
-            <i>Mais dados em breve...</i>
-        `);
+        stationColby.bindPopup('<h3 class="popup-title">Colby Mesonet</h3><b>Temp:</b> 19°C <br><b>Precip:</b> 2.5 mm');
 
-        // Estação Parsons, KS
         var stationParsons = L.circleMarker([37.370, -95.280], markerStyle).addTo(map);
-        stationParsons.bindPopup(`
-            <h3 class="popup-title">Parsons Mesonet</h3>
-            <b>Temp:</b> 25°C <br>
-            <b>Precipitação:</b> 0.0 mm <br>
-            <i>Mais dados em breve...</i>
-        `);
+        stationParsons.bindPopup('<h3 class="popup-title">Parsons Mesonet</h3><b>Temp:</b> 25°C <br><b>Precip:</b> 0.0 mm');
 
     </script>
 </body>
