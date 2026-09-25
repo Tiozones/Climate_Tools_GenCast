@@ -12,15 +12,14 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            background-color: #121212; 
+            background-color: #2c2c2c; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         #map {
             width: 100%;
             height: 100vh; 
-            /* Se a internet demorar a carregar o mapa, o fundo fica escuro em vez de branco */
-            background-color: #121212; 
+            background-color: #2c2c2c; 
         }
 
         .leaflet-popup-content-wrapper {
@@ -49,55 +48,91 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <script>
-        // 1. DEFININDO OS LIMITES DO KANSAS (Bounding Box)
-        // Coordenadas aproximadas do canto Sudoeste e Nordeste do estado
+        // ==========================================
+        // 1. MAP SETUP & CONSTRAINTS
+        // ==========================================
         var kansasBounds = [
-            [36.9, -102.1], // SW (Sudoeste)
-            [40.1, -94.5]   // NE (Nordeste)
+            [36.9, -102.1], // SW
+            [40.1, -94.5]   // NE
         ];
 
-        // 2. INICIALIZANDO O MAPA COM TRAVAS
         var map = L.map('map', {
             center: [38.5, -98.0],
             zoom: 7,
-            minZoom: 7, // Trava: O usuário não consegue afastar mais que isso
-            maxBounds: kansasBounds, // Trava: O usuário não consegue arrastar pra fora do estado
-            maxBoundsViscosity: 1.0  // Efeito de "parede invisível" ao bater na borda
+            minZoom: 7, 
+            maxBounds: kansasBounds,
+            maxBoundsViscosity: 1.0  
         });
 
-        // 3. MAPA DE FUNDO (Esri Dark Gray)
-        // Mantém o cinza noturno estático, mas revela rodovias ao dar zoom
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
-            maxZoom: 16
+        // ==========================================
+        // 2. BASEMAP (The detailed "GPS" Map)
+        // ==========================================
+        // This colorful map will be added everywhere, but we will hide the outside next.
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
         }).addTo(map);
 
-        // 4. DESENHANDO A SOMBRA AMARELA NO KANSAS
-        // Puxamos um arquivo público com o desenho de todos os estados dos EUA
+        // ==========================================
+        // 3. THE INVERTED MASK (Spotlight Effect)
+        // ==========================================
         fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
             .then(response => response.json())
             .then(data => {
-                L.geoJSON(data, {
-                    // Filtramos para usar apenas a geometria do Kansas
-                    filter: function(feature) {
-                        return feature.properties.name === 'Kansas';
-                    },
-                    // Estilo da "Máscara"
+                // Find Kansas in the dataset
+                var kansasFeature = data.features.find(f => f.properties.name === 'Kansas');
+                
+                // Create a giant polygon covering the entire world
+                var worldCoords = [
+                    [[-180, 90], [180, 90], [180, -90], [-180, -90], [-180, 90]]
+                ];
+
+                // Punch a "hole" in the world polygon using Kansas coordinates
+                var maskCoords = [worldCoords[0]];
+                var ksGeometry = kansasFeature.geometry.coordinates;
+                
+                if (kansasFeature.geometry.type === 'Polygon') {
+                    ksGeometry.forEach(ring => maskCoords.push(ring));
+                } else if (kansasFeature.geometry.type === 'MultiPolygon') {
+                    ksGeometry.forEach(poly => poly.forEach(ring => maskCoords.push(ring)));
+                }
+
+                var invertedMask = {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": maskCoords
+                    }
+                };
+
+                // Add the dark mask (Outside Kansas)
+                L.geoJSON(invertedMask, {
                     style: {
-                        color: '#ffd700',      // Cor da linha da fronteira (Dourado/Amarelo)
-                        weight: 2,             // Espessura da linha
-                        fillColor: '#ffd700',  // Cor do preenchimento interno
-                        fillOpacity: 0.15      // Nível de transparência (0.15 deixa ver as estradas de fundo)
+                        fillColor: '#1a1a1a', // Very dark gray for the outside
+                        fillOpacity: 0.85,    // 0.85 lets you faintly see borders outside for context. Use 1.0 for pitch black.
+                        color: 'none',        // No border for the mask
+                        weight: 0
+                    }
+                }).addTo(map);
+
+                // Add the Golden Border strictly around Kansas
+                L.geoJSON(kansasFeature, {
+                    style: {
+                        color: '#ffd700', // Gold/Yellow border
+                        weight: 3,
+                        fill: false       // Transparent inside to see the GPS map!
                     }
                 }).addTo(map);
             });
 
-        // 5. ESTILO E ADIÇÃO DOS PONTOS (Mesonet)
+        // ==========================================
+        // 4. ADDING MESONET STATIONS
+        // ==========================================
         var markerStyle = {
             radius: 8,
             fillColor: "#ff0000", 
-            color: "#ffcccc",     
-            weight: 1,
+            color: "#ffffff",     
+            weight: 2,
             opacity: 1,
             fillOpacity: 0.9
         };
