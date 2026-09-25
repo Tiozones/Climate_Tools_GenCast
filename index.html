@@ -1,1 +1,110 @@
-<h1>AmeriFlux Data Pipeline</h1><p>Site em construcao.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kansas GenCast & Mesonet Dashboard</title>
+    
+    <!-- Importando o CSS do Leaflet (Estilos do Mapa) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Estilos customizados para deixar o visual Premium -->
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #121212; /* Fundo escuro para combinar com o mapa */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* O mapa vai ocupar a tela inteira */
+        #map {
+            width: 100%;
+            height: 100vh; 
+        }
+
+        /* Estilizando a caixinha de informação (Popup) */
+        .leaflet-popup-content-wrapper {
+            background: #1e1e1e;
+            color: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #ff3333;
+        }
+        .leaflet-popup-tip {
+            background: #1e1e1e;
+            border: 1px solid #ff3333;
+        }
+        .popup-title {
+            color: #ff4d4d;
+            font-size: 16px;
+            margin: 0 0 5px 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- A div onde o mapa será desenhado -->
+    <div id="map"></div>
+
+    <!-- Importando o JavaScript do Leaflet (Motor do Mapa) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // 1. INICIALIZANDO O MAPA
+        // Coordenadas centrais do Kansas (Lat: 38.5, Lon: -98.0) e Zoom inicial de 7
+        var map = L.map('map').setView([38.5, -98.0], 7);
+
+        // 2. ADICIONANDO O TEMA ESCURO (Dark Matter)
+        // Esse mapa base foca nas fronteiras e deixa o fundo bem escuro, perfeito para os pontos vermelhos.
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19,
+            minZoom: 4 // Impede o usuário de afastar muito e ver o mundo inteiro
+        }).addTo(map);
+
+        // 3. ESTILO DOS PONTOS (Estações)
+        var markerStyle = {
+            radius: 8,
+            fillColor: "#ff0000", // Vermelho vibrante
+            color: "#ffcccc",     // Borda clarinha
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8
+        };
+
+        // 4. ADICIONANDO ESTAÇÕES MESONET (Exemplos)
+        
+        // Estação Manhattan, KS
+        var stationManhattan = L.circleMarker([39.208, -96.592], markerStyle).addTo(map);
+        stationManhattan.bindPopup(`
+            <h3 class="popup-title">Manhattan Mesonet</h3>
+            <b>Temp:</b> 22°C <br>
+            <b>Precipitação:</b> 0.0 mm <br>
+            <i>Mais dados em breve...</i>
+        `);
+
+        // Estação Colby, KS (Apenas para ter mais de um ponto na tela)
+        var stationColby = L.circleMarker([39.395, -101.060], markerStyle).addTo(map);
+        stationColby.bindPopup(`
+            <h3 class="popup-title">Colby Mesonet</h3>
+            <b>Temp:</b> 19°C <br>
+            <b>Precipitação:</b> 2.5 mm <br>
+            <i>Mais dados em breve...</i>
+        `);
+
+        // Estação Parsons, KS
+        var stationParsons = L.circleMarker([37.370, -95.280], markerStyle).addTo(map);
+        stationParsons.bindPopup(`
+            <h3 class="popup-title">Parsons Mesonet</h3>
+            <b>Temp:</b> 25°C <br>
+            <b>Precipitação:</b> 0.0 mm <br>
+            <i>Mais dados em breve...</i>
+        `);
+
+    </script>
+</body>
+</html>
