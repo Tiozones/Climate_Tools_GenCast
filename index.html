@@ -116,7 +116,7 @@
             minZoom: 7, 
             maxBounds: kansasBounds, 
             maxBoundsViscosity: 1.0,
-            preferCanvas: true // Critical for smooth circle resizing during zoom
+            preferCanvas: true // Fixed the issue where circles get distorted on zoom
         });
 
         // Background dark map
@@ -125,28 +125,15 @@
             maxZoom: 19 
         }).addTo(map);
 
-        // Kansas high-res polygon clipping
-        fetch('https://raw.githubusercontent.com/kjhealy/us-county/master/data/geojson/gz_2010_us_040_00_5m.json')
+        // Kansas polygon clipping
+        fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
             .then(response => response.json())
             .then(data => {
-                var kansasFeature = data.features.find(f => f.properties.NAME === 'Kansas');
+                var kansasFeature = data.features.find(f => f.properties.name === 'Kansas');
                 var osmUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
                 
                 L.TileLayer.boundaryCanvas(osmUrl, { boundary: kansasFeature, attribution: '&copy; OpenStreetMap' }).addTo(map);
-                
-                // ==========================================
-                // CREATING THE GLOWING BORDER (The requested feature)
-                // We layer 3 lines with varying weight/opacity to create light bloom.
-                // ==========================================
-
-                // Layer 1: The Deep Glow (Thick, low opacity)
-                L.geoJSON(kansasFeature, { style: { color: '#ffea00', weight: 18, fill: false, opacity: 0.2 } }).addTo(map);
-                
-                // Layer 2: The Outer Border Glow (Medium weight)
-                L.geoJSON(kansasFeature, { style: { color: '#ffd700', weight: 10, fill: false, opacity: 0.6 } }).addTo(map);
-                
-                // Layer 3: The Vibrant Core Line (Thin, bright)
-                L.geoJSON(kansasFeature, { style: { color: '#ffffff', weight: 3, fill: false, opacity: 1.0 } }).addTo(map);
+                L.geoJSON(kansasFeature, { style: { color: '#ffd700', weight: 4, fill: false, opacity: 1 } }).addTo(map);
                 
                 addStations();
             });
@@ -160,4 +147,76 @@
             var markerStyle = { radius: 8, fillColor: "#ff0000", color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.9 };
             
             markers['Manhattan'] = L.circleMarker([39.208, -96.592], markerStyle).addTo(map)
-                .bindPopup('<h3 class="popup-title">Manhattan Mesonet</h3><b>Temp:
+                .bindPopup('<h3 class="popup-title">Manhattan Mesonet</h3><b>Temp:</b> 22°C <br><b>Precip:</b> 0.0 mm');
+
+            markers['Colby'] = L.circleMarker([39.395, -101.060], markerStyle).addTo(map)
+                .bindPopup('<h3 class="popup-title">Colby Mesonet</h3><b>Temp:</b> 19°C <br><b>Precip:</b> 2.5 mm');
+
+            markers['Parsons'] = L.circleMarker([37.370, -95.280], markerStyle).addTo(map)
+                .bindPopup('<h3 class="popup-title">Parsons Mesonet</h3><b>Temp:</b> 25°C <br><b>Precip:</b> 0.0 mm');
+        }
+
+        // ==========================================
+        // 3. USER INTERFACE (UI) FUNCTIONS
+        // ==========================================
+        
+        // Expand/Collapse the station list
+        function toggleList() {
+            var list = document.getElementById("station-list");
+            var arrow = document.getElementById("arrow");
+            if (list.style.display === "none" || list.style.display === "") {
+                list.style.display = "block";
+                arrow.innerHTML = "▲";
+            } else {
+                list.style.display = "none";
+                arrow.innerHTML = "▼";
+            }
+        }
+
+        // Fly to station selected from the list
+        function goToStation(name) {
+            var marker = markers[name];
+            if(marker) {
+                // Voa suavemente para o ponto e abre a caixinha de dados
+                map.flyTo(marker.getLatLng(), 11);
+                marker.openPopup();
+            }
+        }
+
+        // Fly to user-input coordinates
+        function searchCoordinates() {
+            var lat = parseFloat(document.getElementById("input-lat").value);
+            var lon = parseFloat(document.getElementById("input-lon").value);
+            
+            if (!isNaN(lat) && !isNaN(lon)) {
+                map.flyTo([lat, lon], 12);
+                L.marker([lat, lon]).addTo(map).bindPopup("<b>Searched Location:</b><br>" + lat + ", " + lon).openPopup();
+            } else {
+                alert("Please enter valid numbers for Latitude and Longitude.");
+            }
+        }
+
+        // Use Native HTML5 Geolocation (GPS)
+        function useMyLocation() {
+            if (navigator.geolocation) {
+                // Pede permissão ao usuário e pega a posição
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+                    
+                    // Voa para o local do usuário e coloca um pino azul brilhante
+                    map.flyTo([lat, lon], 13);
+                    var userPino = L.circleMarker([lat, lon], {
+                        radius: 10, fillColor: "#007bff", color: "#ffffff", weight: 3, opacity: 1, fillOpacity: 1
+                    }).addTo(map).bindPopup("<b>Your Current Location</b>").openPopup();
+                    
+                }, function(error) {
+                    alert("Unable to access your GPS location. Please check your browser permissions.");
+                });
+            } else {
+                alert("Your browser does not support Geolocation.");
+            }
+        }
+    </script>
+</body>
+</html>
