@@ -116,15 +116,12 @@
             minZoom: 7, 
             maxBounds: kansasBounds, 
             maxBoundsViscosity: 1.0,
-            preferCanvas: true, // Fixed the issue where circles get distorted on zoom
-            // Disabling the default zoom control that is normally at the top-left
-            zoomControl: false 
+            preferCanvas: true,
+            zoomControl: false // Disable default top-left zoom
         });
 
-        // Adding a new zoom control to the bottom-left corner
-        L.control.zoom({
-            position: 'bottomleft'
-        }).addTo(map);
+        // Move zoom control to bottom-left
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
         // Background dark map
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { 
@@ -135,18 +132,13 @@
         // ==========================================
         // 2. HIGH RESOLUTION GEOJSON FOR KANSAS
         // ==========================================
-        // We use a high-res (5m) GeoJSON to perfectly trace the Missouri River curves
         fetch('https://raw.githubusercontent.com/kjhealy/us-county/master/data/geojson/gz_2010_us_040_00_5m.json')
             .then(response => response.json())
             .then(data => {
-                // In this specific dataset, the property name is 'NAME' (all caps)
                 var kansasFeature = data.features.find(f => f.properties.NAME === 'Kansas');
                 var osmUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
                 
-                // Mask the outside
                 L.TileLayer.boundaryCanvas(osmUrl, { boundary: kansasFeature, attribution: '&copy; OpenStreetMap' }).addTo(map);
-                
-                // Draw the detailed golden border
                 L.geoJSON(kansasFeature, { style: { color: '#ffd700', weight: 4, fill: false, opacity: 1 } }).addTo(map);
                 
                 addStations();
@@ -171,8 +163,12 @@
         }
 
         // ==========================================
-        // 4. USER INTERFACE (UI) FUNCTIONS
+        // 4. USER INTERFACE (UI) FUNCTIONS & MARKER STATE
         // ==========================================
+        
+        // Variables to keep track of dynamically added pins so we can remove them later
+        var currentSearchMarker = null;
+        var currentUserGPSPin = null;
         
         function toggleList() {
             var list = document.getElementById("station-list");
@@ -200,7 +196,16 @@
             
             if (!isNaN(lat) && !isNaN(lon)) {
                 map.flyTo([lat, lon], 12);
-                L.marker([lat, lon]).addTo(map).bindPopup("<b>Searched Location:</b><br>" + lat + ", " + lon).openPopup();
+                
+                // If a previous search pin exists, remove it before adding the new one
+                if (currentSearchMarker !== null) {
+                    map.removeLayer(currentSearchMarker);
+                }
+                
+                // Add the new pin and store it in the tracker variable
+                currentSearchMarker = L.marker([lat, lon]).addTo(map).bindPopup("<b>Searched Location:</b><br>" + lat + ", " + lon);
+                currentSearchMarker.openPopup();
+                
             } else {
                 alert("Please enter valid numbers for Latitude and Longitude.");
             }
@@ -214,9 +219,15 @@
                     
                     map.flyTo([lat, lon], 13);
                     
-                    var userPin = L.circleMarker([lat, lon], {
+                    // Prevent multiple GPS pins if the user clicks the button multiple times
+                    if (currentUserGPSPin !== null) {
+                        map.removeLayer(currentUserGPSPin);
+                    }
+                    
+                    currentUserGPSPin = L.circleMarker([lat, lon], {
                         radius: 10, fillColor: "#007bff", color: "#ffffff", weight: 3, opacity: 1, fillOpacity: 1
-                    }).addTo(map).bindPopup("<b>Your Current Location</b>").openPopup();
+                    }).addTo(map).bindPopup("<b>Your Current Location</b>");
+                    currentUserGPSPin.openPopup();
                     
                 }, function(error) {
                     alert("Unable to access your GPS location. Please check your browser permissions.");
