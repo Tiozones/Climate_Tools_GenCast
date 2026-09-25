@@ -11,17 +11,17 @@
         body, html { margin: 0; padding: 0; height: 100%; background-color: #2c2c2c; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         #map { width: 100%; height: 100vh; background-color: #2c2c2c; }
         
-        /* Estilos do Popup do Leaflet */
+        /* Leaflet Popup Styles */
         .leaflet-popup-content-wrapper { background: #1e1e1e; color: #ffffff; border-radius: 8px; border: 1px solid #ff3333; }
         .leaflet-popup-tip { background: #1e1e1e; border: 1px solid #ff3333; }
         .popup-title { color: #ff4d4d; font-size: 16px; margin: 0 0 5px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
 
         /* ==========================================
-           ESTILOS DOS PAINÉIS FLUTUANTES
+           FLOATING PANELS STYLES
            ========================================== */
         .floating-panel {
             position: absolute;
-            z-index: 9999; /* Garante que fique acima do mapa */
+            z-index: 9999; 
             background: rgba(30, 30, 30, 0.85);
             backdrop-filter: blur(5px);
             border: 1px solid #444;
@@ -31,16 +31,12 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        /* Painel 1: Título e Lista (Canto Superior Esquerdo) */
-        #title-panel {
-            top: 20px;
-            left: 20px;
-            width: 280px;
-        }
+        /* Panel 1: Title and Station List (Top Left) */
+        #title-panel { top: 20px; left: 20px; width: 280px; }
         #title-panel h2 { margin: 0 0 5px 0; font-size: 20px; color: #ffd700; }
         #title-panel p { margin: 0 0 15px 0; font-size: 13px; color: #ccc; }
         
-        /* Botão para abrir a lista */
+        /* Toggle List Button */
         .toggle-btn {
             background: #333; color: #fff; border: 1px solid #555;
             padding: 8px; width: 100%; border-radius: 5px;
@@ -49,31 +45,24 @@
         }
         .toggle-btn:hover { background: #444; }
 
-        /* Lista de Estações Oculta */
+        /* Hidden Station List */
         #station-list {
-            display: none; /* Escondida por padrão */
+            display: none; 
             list-style: none; padding: 0; margin: 10px 0 0 0;
             max-height: 150px; overflow-y: auto;
         }
-        #station-list li {
-            padding: 8px; border-bottom: 1px solid #444; cursor: pointer; font-size: 14px;
-        }
+        #station-list li { padding: 8px; border-bottom: 1px solid #444; cursor: pointer; font-size: 14px; }
         #station-list li:hover { background: #444; color: #ffd700; }
 
-        /* Painel 2: Busca por GPS (Canto Superior Direito) */
-        #gps-panel {
-            top: 20px;
-            right: 20px;
-            width: 220px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        /* Panel 2: GPS and Coordinates Search (Top Right) */
+        #gps-panel { top: 20px; right: 20px; width: 220px; display: flex; flex-direction: column; gap: 10px; }
         #gps-panel h3 { margin: 0; font-size: 16px; color: #fff; }
+        
         .coord-input {
             background: #222; color: #fff; border: 1px solid #555;
             padding: 8px; border-radius: 5px; width: 100%; box-sizing: border-box;
         }
+        
         .action-btn {
             background: #ffd700; color: #000; border: none; font-weight: bold;
             padding: 10px; border-radius: 5px; cursor: pointer;
@@ -84,33 +73,32 @@
 </head>
 <body>
 
-    <!-- UI: PAINEL DE TÍTULO E LISTA -->
+    <!-- UI: TITLE & LIST PANEL -->
     <div id="title-panel" class="floating-panel">
         <h2>GenCast Mesonet</h2>
-        <p>Selecione sua Mesonet station no mapa ou expanda a lista abaixo.</p>
+        <p>Select your Mesonet station on the map or expand the list below.</p>
         
         <button class="toggle-btn" onclick="toggleList()">
-            Estações Disponíveis <span id="arrow">▼</span>
+            Available Stations <span id="arrow">▼</span>
         </button>
         <ul id="station-list">
-            <!-- Os itens chamam uma função para mover o mapa -->
-            <li onclick="irParaEstacao('Manhattan')">📍 Manhattan</li>
-            <li onclick="irParaEstacao('Colby')">📍 Colby</li>
-            <li onclick="irParaEstacao('Parsons')">📍 Parsons</li>
+            <li onclick="goToStation('Manhattan')">📍 Manhattan</li>
+            <li onclick="goToStation('Colby')">📍 Colby</li>
+            <li onclick="goToStation('Parsons')">📍 Parsons</li>
         </ul>
     </div>
 
-    <!-- UI: PAINEL DE BUSCA E GPS -->
+    <!-- UI: SEARCH & GPS PANEL -->
     <div id="gps-panel" class="floating-panel">
-        <h3>🔍 Coordenadas</h3>
-        <input type="text" id="input-lat" class="coord-input" placeholder="Latitude (ex: 39.2)">
-        <input type="text" id="input-lon" class="coord-input" placeholder="Longitude (ex: -96.5)">
-        <button class="action-btn" onclick="buscarCoordenada()">Ir para Coordenada</button>
+        <h3>🔍 Coordinates</h3>
+        <input type="text" id="input-lat" class="coord-input" placeholder="Latitude (e.g. 39.2)">
+        <input type="text" id="input-lon" class="coord-input" placeholder="Longitude (e.g. -96.5)">
+        <button class="action-btn" onclick="searchCoordinates()">Go to Location</button>
         <hr style="border: 0; border-top: 1px solid #555; width: 100%; margin: 5px 0;">
-        <button class="action-btn" style="background: #007bff; color: white;" onclick="usarMeuGPS()">📡 Usar minha localização</button>
+        <button class="action-btn" style="background: #007bff; color: white;" onclick="useMyLocation()">📡 Use my location</button>
     </div>
 
-    <!-- MAPA -->
+    <!-- MAP CONTAINER -->
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -118,30 +106,46 @@
     
     <script>
         // ==========================================
-        // MAP SETUP & CLIPPING (Mantido igual)
+        // 1. MAP SETUP & CLIPPING
         // ==========================================
         var kansasBounds = [[36.9, -102.1], [40.1, -94.5]];
-        var map = L.map('map', { center: [38.5, -98.0], zoom: 7, minZoom: 7, maxBounds: kansasBounds, maxBoundsViscosity: 1.0 });
+        
+        var map = L.map('map', { 
+            center: [38.5, -98.0], 
+            zoom: 7, 
+            minZoom: 7, 
+            maxBounds: kansasBounds, 
+            maxBoundsViscosity: 1.0,
+            // THE MAGIC FIX: Forces Leaflet to use Canvas instead of SVG.
+            // This perfectly solves the circle resizing issue during zoom animations!
+            preferCanvas: true 
+        });
 
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 19 }).addTo(map);
+        // Background dark map
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { 
+            attribution: 'Tiles &copy; Esri', 
+            maxZoom: 19 
+        }).addTo(map);
 
+        // Kansas polygon clipping
         fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
             .then(response => response.json())
             .then(data => {
                 var kansasFeature = data.features.find(f => f.properties.name === 'Kansas');
                 var osmUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+                
                 L.TileLayer.boundaryCanvas(osmUrl, { boundary: kansasFeature, attribution: '&copy; OpenStreetMap' }).addTo(map);
                 L.geoJSON(kansasFeature, { style: { color: '#ffd700', weight: 4, fill: false, opacity: 1 } }).addTo(map);
-                adicionarEstacoes();
+                
+                addStations();
             });
 
         // ==========================================
-        // LÓGICA DAS ESTAÇÕES
+        // 2. STATION LOGIC & MARKERS
         // ==========================================
-        // Guardamos as estações numa variável para podermos simular o clique nelas pela lista
         var markers = {}; 
 
-        function adicionarEstacoes() {
+        function addStations() {
             var markerStyle = { radius: 8, fillColor: "#ff0000", color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.9 };
             
             markers['Manhattan'] = L.circleMarker([39.208, -96.592], markerStyle).addTo(map)
@@ -155,64 +159,62 @@
         }
 
         // ==========================================
-        // FUNÇÕES DA INTERFACE (UI)
+        // 3. USER INTERFACE (UI) FUNCTIONS
         // ==========================================
         
-        // 1. Abrir/Fechar Lista de Estações
+        // Expand/Collapse the station list
         function toggleList() {
-            var lista = document.getElementById("station-list");
-            var seta = document.getElementById("arrow");
-            if (lista.style.display === "none" || lista.style.display === "") {
-                lista.style.display = "block";
-                seta.innerHTML = "▲";
+            var list = document.getElementById("station-list");
+            var arrow = document.getElementById("arrow");
+            if (list.style.display === "none" || list.style.display === "") {
+                list.style.display = "block";
+                arrow.innerHTML = "▲";
             } else {
-                lista.style.display = "none";
-                seta.innerHTML = "▼";
+                list.style.display = "none";
+                arrow.innerHTML = "▼";
             }
         }
 
-        // 2. Voar para estação ao clicar na lista
-        function irParaEstacao(nome) {
-            var marker = markers[nome];
+        // Fly to station selected from the list
+        function goToStation(name) {
+            var marker = markers[name];
             if(marker) {
-                // Voa suavemente para o ponto e abre a caixinha de dados
                 map.flyTo(marker.getLatLng(), 11);
                 marker.openPopup();
             }
         }
 
-        // 3. Buscar Coordenada digitada
-        function buscarCoordenada() {
+        // Fly to user-input coordinates
+        function searchCoordinates() {
             var lat = parseFloat(document.getElementById("input-lat").value);
             var lon = parseFloat(document.getElementById("input-lon").value);
             
             if (!isNaN(lat) && !isNaN(lon)) {
                 map.flyTo([lat, lon], 12);
-                L.marker([lat, lon]).addTo(map).bindPopup("<b>Buscado:</b><br>" + lat + ", " + lon).openPopup();
+                L.marker([lat, lon]).addTo(map).bindPopup("<b>Searched Location:</b><br>" + lat + ", " + lon).openPopup();
             } else {
-                alert("Por favor, insira números válidos para Latitude e Longitude.");
+                alert("Please enter valid numbers for Latitude and Longitude.");
             }
         }
 
-        // 4. Usar GPS do Usuário (Geolocalização Nativa)
-        function usarMeuGPS() {
+        // Use Native HTML5 Geolocation (GPS)
+        function useMyLocation() {
             if (navigator.geolocation) {
-                // Pede permissão ao usuário e pega a posição
                 navigator.geolocation.getCurrentPosition(function(position) {
                     var lat = position.coords.latitude;
                     var lon = position.coords.longitude;
                     
-                    // Voa para o local do usuário e coloca um pino azul brilhante
                     map.flyTo([lat, lon], 13);
-                    var userPino = L.circleMarker([lat, lon], {
+                    
+                    var userPin = L.circleMarker([lat, lon], {
                         radius: 10, fillColor: "#007bff", color: "#ffffff", weight: 3, opacity: 1, fillOpacity: 1
-                    }).addTo(map).bindPopup("<b>Sua Localização Atual</b>").openPopup();
+                    }).addTo(map).bindPopup("<b>Your Current Location</b>").openPopup();
                     
                 }, function(error) {
-                    alert("Não foi possível acessar seu GPS. Verifique as permissões do navegador.");
+                    alert("Unable to access your GPS location. Please check your browser permissions.");
                 });
             } else {
-                alert("Seu navegador não suporta Geolocalização.");
+                alert("Your browser does not support Geolocation.");
             }
         }
     </script>
