@@ -8,37 +8,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            background-color: #2c2c2c; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        #map {
-            width: 100%;
-            height: 100vh; 
-            background-color: #2c2c2c; 
-        }
-
-        .leaflet-popup-content-wrapper {
-            background: #1e1e1e;
-            color: #ffffff;
-            border-radius: 8px;
-            border: 1px solid #ff3333;
-        }
-        .leaflet-popup-tip {
-            background: #1e1e1e;
-            border: 1px solid #ff3333;
-        }
-        .popup-title {
-            color: #ff4d4d;
-            font-size: 16px;
-            margin: 0 0 5px 0;
-            border-bottom: 1px solid #333;
-            padding-bottom: 5px;
-        }
+        body, html { margin: 0; padding: 0; height: 100%; background-color: #2c2c2c; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #map { width: 100%; height: 100vh; background-color: #2c2c2c; }
+        .leaflet-popup-content-wrapper { background: #1e1e1e; color: #ffffff; border-radius: 8px; border: 1px solid #ff3333; }
+        .leaflet-popup-tip { background: #1e1e1e; border: 1px solid #ff3333; }
+        .popup-title { color: #ff4d4d; font-size: 16px; margin: 0 0 5px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -46,15 +20,14 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Plugin mágico para recortar o mapa (Clipping) -->
+    <script src="https://cdn.jsdelivr.net/gh/aparshin/leaflet-boundary-canvas@master/src/BoundaryCanvas.js"></script>
     
     <script>
         // ==========================================
         // 1. MAP SETUP & CONSTRAINTS
         // ==========================================
-        var kansasBounds = [
-            [36.9, -102.1], // SW
-            [40.1, -94.5]   // NE
-        ];
+        var kansasBounds = [[36.9, -102.1], [40.1, -94.5]];
 
         var map = L.map('map', {
             center: [38.5, -98.0],
@@ -65,86 +38,62 @@
         });
 
         // ==========================================
-        // 2. BASEMAP (The detailed "GPS" Map)
+        // 2. MAPA DE FUNDO (Esri Dark Gray)
+        // Esse mapa escuro e liso preenche a tela inteira por baixo
         // ==========================================
-        // This colorful map will be added everywhere, but we will hide the outside next.
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors',
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
             maxZoom: 19
         }).addTo(map);
 
         // ==========================================
-        // 3. THE INVERTED MASK (Spotlight Effect)
+        // 3. BUSCANDO O FORMATO DO KANSAS E RECORTANDO
         // ==========================================
         fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json')
             .then(response => response.json())
             .then(data => {
-                // Find Kansas in the dataset
                 var kansasFeature = data.features.find(f => f.properties.name === 'Kansas');
-                
-                // Create a giant polygon covering the entire world
-                var worldCoords = [
-                    [[-180, 90], [180, 90], [180, -90], [-180, -90], [-180, 90]]
-                ];
 
-                // Punch a "hole" in the world polygon using Kansas coordinates
-                var maskCoords = [worldCoords[0]];
-                var ksGeometry = kansasFeature.geometry.coordinates;
-                
-                if (kansasFeature.geometry.type === 'Polygon') {
-                    ksGeometry.forEach(ring => maskCoords.push(ring));
-                } else if (kansasFeature.geometry.type === 'MultiPolygon') {
-                    ksGeometry.forEach(poly => poly.forEach(ring => maskCoords.push(ring)));
-                }
+                // Aqui acontece a mágica: O Street Map é desenhado APENAS dentro do polígono do Kansas
+                var osmUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+                var kansasOSM = L.TileLayer.boundaryCanvas(osmUrl, {
+                    boundary: kansasFeature,
+                    attribution: '&copy; OpenStreetMap'
+                });
+                kansasOSM.addTo(map);
 
-                var invertedMask = {
-                    "type": "Feature",
-                    "geometry": {
-                        "type": "Polygon",
-                        "coordinates": maskCoords
-                    }
-                };
-
-                // Add the dark mask (Outside Kansas)
-                L.geoJSON(invertedMask, {
-                    style: {
-                        fillColor: '#1a1a1a', // Very dark gray for the outside
-                        fillOpacity: 0.85,    // 0.85 lets you faintly see borders outside for context. Use 1.0 for pitch black.
-                        color: 'none',        // No border for the mask
-                        weight: 0
-                    }
-                }).addTo(map);
-
-                // Add the Golden Border strictly around Kansas
+                // ==========================================
+                // 4. BORDA DOURADA
+                // Desenhada por último para ficar brilhante por cima de tudo
+                // ==========================================
                 L.geoJSON(kansasFeature, {
                     style: {
-                        color: '#ffd700', // Gold/Yellow border
-                        weight: 3,
-                        fill: false       // Transparent inside to see the GPS map!
+                        color: '#ffd700', // Dourado brilhante
+                        weight: 4,        // Mais grossa para dar destaque
+                        fill: false,      // Sem preenchimento, o mapa interno já cuida disso
+                        opacity: 1        // 100% visível, sem ser abafada por máscaras escuras
                     }
                 }).addTo(map);
+
+                // Desenha as estações depois que o mapa carregar para não ficarem embaixo
+                adicionarEstacoes();
             });
 
         // ==========================================
-        // 4. ADDING MESONET STATIONS
+        // 5. ADDING MESONET STATIONS
         // ==========================================
-        var markerStyle = {
-            radius: 8,
-            fillColor: "#ff0000", 
-            color: "#ffffff",     
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.9
-        };
-        
-        var stationManhattan = L.circleMarker([39.208, -96.592], markerStyle).addTo(map);
-        stationManhattan.bindPopup('<h3 class="popup-title">Manhattan Mesonet</h3><b>Temp:</b> 22°C <br><b>Precip:</b> 0.0 mm');
+        function adicionarEstacoes() {
+            var markerStyle = { radius: 8, fillColor: "#ff0000", color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.9 };
+            
+            var stationManhattan = L.circleMarker([39.208, -96.592], markerStyle).addTo(map);
+            stationManhattan.bindPopup('<h3 class="popup-title">Manhattan Mesonet</h3><b>Temp:</b> 22°C <br><b>Precip:</b> 0.0 mm');
 
-        var stationColby = L.circleMarker([39.395, -101.060], markerStyle).addTo(map);
-        stationColby.bindPopup('<h3 class="popup-title">Colby Mesonet</h3><b>Temp:</b> 19°C <br><b>Precip:</b> 2.5 mm');
+            var stationColby = L.circleMarker([39.395, -101.060], markerStyle).addTo(map);
+            stationColby.bindPopup('<h3 class="popup-title">Colby Mesonet</h3><b>Temp:</b> 19°C <br><b>Precip:</b> 2.5 mm');
 
-        var stationParsons = L.circleMarker([37.370, -95.280], markerStyle).addTo(map);
-        stationParsons.bindPopup('<h3 class="popup-title">Parsons Mesonet</h3><b>Temp:</b> 25°C <br><b>Precip:</b> 0.0 mm');
+            var stationParsons = L.circleMarker([37.370, -95.280], markerStyle).addTo(map);
+            stationParsons.bindPopup('<h3 class="popup-title">Parsons Mesonet</h3><b>Temp:</b> 25°C <br><b>Precip:</b> 0.0 mm');
+        }
 
     </script>
 </body>
