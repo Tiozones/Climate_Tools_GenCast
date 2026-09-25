@@ -57,13 +57,11 @@
         // Coordenadas centrais do Kansas (Lat: 38.5, Lon: -98.0) e Zoom inicial de 7
         var map = L.map('map').setView([38.5, -98.0], 7);
 
-        // 2. ADICIONANDO O TEMA ESCURO (Dark Matter)
-        // Esse mapa base foca nas fronteiras e deixa o fundo bem escuro, perfeito para os pontos vermelhos.
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 19,
-            minZoom: 4 // Impede o usuário de afastar muito e ver o mundo inteiro
+        // 2. ADICIONANDO O TEMA ESCURO (Esri Dark Gray)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+            maxZoom: 16,
+            minZoom: 4
         }).addTo(map);
 
         // 3. ESTILO DOS PONTOS (Estações)
