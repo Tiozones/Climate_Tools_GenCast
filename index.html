@@ -7,6 +7,9 @@
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
+    <!-- Importando o Plotly.js para gráficos científicos -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background-color: #2c2c2c; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
         #map { width: 100%; height: 100vh; background-color: #2c2c2c; }
@@ -65,7 +68,24 @@
             padding: 10px; border-radius: 5px; cursor: pointer;
         }
         .action-btn:hover { background: #e6c200; }
-        
+
+        #plot-panel {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            display: none; /* hinding at firts */
+            flex-direction: column;
+        }
+        .close-btn {
+            align-self: flex-end;
+            background: none;
+            border: none;
+            color: #ff4d4d;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -91,6 +111,11 @@
         <button class="action-btn" style="background: #007bff; color: white;" onclick="useMyLocation()">📡 Use my location</button>
     </div>
 
+    <div id="plot-panel" class="floating-panel">
+        <button class="close-btn" onclick="closeGraph()">X</button>
+        <h3 style="margin-top: 0; color: #ffd700;" id="plot-title">Forecast Accuracy</h3>
+        <div id="correlation-plot" style="width: 100%; height: 300px;"></div>
+    </div>
     <!-- MAP CONTAINER -->
     <div id="map"></div>
 
@@ -188,7 +213,7 @@
                     '<h3 class="popup-title">' + station.NAME + '</h3>' +
                     '<div class="popup-subtitle">' + station.COUNTY + ' County</div>' +
                     '<b>Elevation:</b> ' + station.ELEVATION + ' ft <br>' +
-                    '<i>(Further metrics to be integrated)</i>'
+                    '<button class="action-btn" style="width:100%; margin-top:10px; padding:5px;" onclick="openGraph(\'' + station.NAME + '\')">📊 View GenCast Correlation</button>'
                 );
                 
                 // Store in dictionary for search indexing
@@ -296,6 +321,42 @@
             } else {
                 alert("Your browser does not support Geolocation.");
             }
+        }
+        // NEW FUNCTIONS FOR CORRELATION PLOT
+        function closeGraph() {
+            document.getElementById("plot-panel").style.display = "none";
+        }
+
+        function openGraph(stationName) {
+            document.getElementById("plot-panel").style.display = "flex";
+            document.getElementById("plot-title").textContent = `GenCast vs Mesonet: ${stationName}`;
+            
+            const mesonetGroundTruth = [12, 14, 15, 18, 20, 22, 21, 19, 16, 13]; 
+            const genCastForecast =    [11, 15, 16, 17, 21, 23, 20, 19, 17, 12]; 
+
+            const trace1 = {
+                x: mesonetGroundTruth, y: genCastForecast,
+                mode: 'markers', type: 'scatter', name: 'Daily Temp °C',
+                marker: { size: 10, color: '#ff4d4d' },
+                hovertemplate: 'Mesonet: %{x}°C<br>GenCast: %{y}°C<extra></extra>'
+            };
+
+            const trace2 = {
+                x: [Math.min(...mesonetGroundTruth), Math.max(...mesonetGroundTruth)],
+                y: [Math.min(...mesonetGroundTruth), Math.max(...mesonetGroundTruth)],
+                mode: 'lines', type: 'scatter', name: 'Perfect Agreement (1:1)',
+                line: { dash: 'dash', color: '#aaaaaa' }
+            };
+
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#ffffff' }, margin: { t: 10, l: 40, r: 20, b: 40 },
+                xaxis: { title: 'Mesonet Ground Truth (°C)', gridcolor: '#444' },
+                yaxis: { title: 'GenCast 10-day Lead (°C)', gridcolor: '#444' },
+                showlegend: false
+            };
+
+            Plotly.newPlot('correlation-plot', [trace1, trace2], layout, {responsive: true, displayModeBar: false});
         }
     </script>
 </body>
