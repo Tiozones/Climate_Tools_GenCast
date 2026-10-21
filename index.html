@@ -190,7 +190,50 @@
                 document.getElementById('station-list').innerHTML = "<li>Error loading stations data.</li>";
             }
         }
-
+        // Global object to store the correlation data
+        var forecastData = {}; 
+        
+        async function loadForecastData() {
+            try {
+                const response = await fetch('dashboard_data.csv');
+                if (!response.ok) throw new Error("Could not load dashboard_data.csv");
+                
+                const csvText = await response.text();
+                const lines = csvText.trim().split(/\r?\n/);
+                const headers = lines[0].split(",");
+                
+                // Map the column indexes dynamically
+                const stnIdx = headers.indexOf("Station");
+                const obsIdx = headers.indexOf("Mesonet_Temp_C");
+                const fcstIdx = headers.indexOf("GenCast_Temp_C");
+        
+                // Loop through the rows (skipping the header)
+                for (let i = 1; i < lines.length; i++) {
+                    const row = lines[i].split(",");
+                    if (row.length < headers.length) continue; 
+                    
+                    const station = row[stnIdx];
+                    const obsTemp = parseFloat(row[obsIdx]);
+                    const fcstTemp = parseFloat(row[fcstIdx]);
+        
+                    // If this is the first time seeing this station, create its arrays
+                    if (!forecastData[station]) {
+                        forecastData[station] = { obs: [], fcst: [] };
+                    }
+                    
+                    // Push the temperatures into the station's arrays
+                    forecastData[station].obs.push(obsTemp);
+                    forecastData[station].fcst.push(fcstTemp);
+                }
+                console.log("Forecast data loaded for " + Object.keys(forecastData).length + " stations.");
+            } catch (error) {
+                console.error("Error loading forecast data:", error);
+            }
+        }
+        
+        // Call the function immediately so data is ready before the user clicks anything
+        loadForecastData();
+        
         function buildStations(stationList) {
             const listElement = document.getElementById("station-list");
             listElement.innerHTML = ""; // Clear list
@@ -331,31 +374,57 @@
             document.getElementById("plot-panel").style.display = "flex";
             document.getElementById("plot-title").textContent = `GenCast vs Mesonet: ${stationName}`;
             
-            const mesonetGroundTruth = [12, 14, 15, 18, 20, 22, 21, 19, 16, 13]; 
-            const genCastForecast =    [11, 15, 16, 17, 21, 23, 20, 19, 17, 12]; 
-
+            const plotContainer = document.getElementById("correlation-plot");
+        
+            // FALLBACK: If station has no GenCast data
+            if (!forecastData[stationName] || forecastData[stationName].obs.length === 0) {
+                plotContainer.innerHTML = 
+                    "<div style='display:flex; height:100%; align-items:center; justify-content:center; color:#aaa; text-align:center; padding: 20px; box-sizing: border-box;'>" +
+                    "GenCast model correlation is still being implemented for this location.</div>";
+                return; 
+            }
+        
+            // SUCCESS: Station has data, clear any previous messages to render Plotly
+            plotContainer.innerHTML = ""; 
+        
+            // Retrieve the real arrays populated by the CSV parser
+            const mesonetGroundTruth = forecastData[stationName].obs;
+            const genCastForecast = forecastData[stationName].fcst;
+        
             const trace1 = {
-                x: mesonetGroundTruth, y: genCastForecast,
-                mode: 'markers', type: 'scatter', name: 'Daily Temp °C',
-                marker: { size: 10, color: '#ff4d4d' },
+                x: mesonetGroundTruth, 
+                y: genCastForecast,
+                mode: 'markers', 
+                type: 'scatter', 
+                name: 'Daily Temp °C',
+                marker: { size: 8, color: '#ff4d4d', opacity: 0.6 },
                 hovertemplate: 'Mesonet: %{x}°C<br>GenCast: %{y}°C<extra></extra>'
             };
-
+        
+            // Calculate dynamic min/max for the 1:1 reference line
+            const allTemps = mesonetGroundTruth.concat(genCastForecast);
+            const minTemp = Math.min(...allTemps);
+            const maxTemp = Math.max(...allTemps);
+        
             const trace2 = {
-                x: [Math.min(...mesonetGroundTruth), Math.max(...mesonetGroundTruth)],
-                y: [Math.min(...mesonetGroundTruth), Math.max(...mesonetGroundTruth)],
-                mode: 'lines', type: 'scatter', name: 'Perfect Agreement (1:1)',
+                x: [minTemp, maxTemp],
+                y: [minTemp, maxTemp],
+                mode: 'lines', 
+                type: 'scatter', 
+                name: 'Perfect Agreement (1:1)',
                 line: { dash: 'dash', color: '#aaaaaa' }
             };
-
+        
             const layout = {
-                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-                font: { color: '#ffffff' }, margin: { t: 10, l: 40, r: 20, b: 40 },
+                paper_bgcolor: 'rgba(0,0,0,0)', 
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#ffffff' }, 
+                margin: { t: 10, l: 40, r: 20, b: 40 },
                 xaxis: { title: 'Mesonet Ground Truth (°C)', gridcolor: '#444' },
                 yaxis: { title: 'GenCast 10-day Lead (°C)', gridcolor: '#444' },
                 showlegend: false
             };
-
+        
             Plotly.newPlot('correlation-plot', [trace1, trace2], layout, {responsive: true, displayModeBar: false});
         }
     </script>
