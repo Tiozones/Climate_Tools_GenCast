@@ -116,7 +116,7 @@
         <h3 style="margin-top: 0; color: #ffd700;" id="plot-title">Forecast Accuracy</h3>
         <p id="plot-feedback" style="font-size: 13px; line-height: 1.4; color: #ddd; margin-bottom: 15px;"></p>
         <div id="correlation-plot" style="width: 100%; height: 350px;"></div>
-        <button class="action-btn" style="width: 200px; align-self: center; margin-top: 10px; font-size: 13px;" onclick="downloadGraph()">💾 Download PNG</button>
+        <button class="action-btn" style="width: 200px; align-self: center; margin-top: 10px; font-size: 13px;" onclick="downloadChart()">💾 Download PNG</button>
     </div>
     <!-- MAP CONTAINER -->
     <div id="map"></div>
@@ -382,6 +382,13 @@
         }
 
         function openGraph(stationName) {
+            // NEW: Pan the map to push the marker to the top of the screen
+            if (markers[stationName]) {
+                const latLng = markers[stationName].latLng;
+                // Adding ~0.6 to the latitude centers the camera north of the station
+                map.flyTo([latLng.lat + 0.6, latLng.lng], 8); 
+            }
+            
             document.getElementById("plot-panel").style.display = "flex";
             document.getElementById("plot-title").textContent = `GenCast vs Mesonet: ${stationName}`;
             
@@ -467,7 +474,7 @@
             const trace3 = {
                 x: residuals,
                 type: 'histogram',
-                histnorm: 'density',
+                histnorm: 'percent',
                 marker: { color: '#5b9bd5', line: { color: '#333333', width: 1 } },
                 opacity: 0.8,
                 xaxis: 'x2', yaxis: 'y2', // Assign to the second subplot (right)
@@ -489,7 +496,7 @@
                 // Histogram Configuration (Right half)
                 // domain places it from 55% to 100% of the panel, leaving a gap in the middle
                 xaxis2: { title: 'Residuals (Obs - Forecast)', domain: [0.55, 1], gridcolor: '#444' },
-                yaxis2: { title: 'Density', anchor: 'x2', gridcolor: '#444' }
+                yaxis2: { title: 'Percentage (%)', anchor: 'x2', gridcolor: '#444' }
             };
         
             Plotly.newPlot('correlation-plot', [trace1, trace2, trace3], layout, {responsive: true, displayModeBar: false});
@@ -498,6 +505,7 @@
         // NEW FUNCTION FOR THE DOWNLOAD BUTTON
         function downloadChart() {
             // Uses Plotly's native tool to export the entire panel as a single high-resolution PNG image
+            const plotElement = document.getElementById('correlation-plot');
             Plotly.downloadImage('correlation-plot', {
                 format: 'png',
                 width: 1000, // Combined rectangular image width
