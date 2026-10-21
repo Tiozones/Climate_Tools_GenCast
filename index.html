@@ -153,6 +153,9 @@
                 
                 L.TileLayer.boundaryCanvas(osmUrl, { boundary: kansasFeature, attribution: '&copy; OpenStreetMap' }).addTo(map);
                 L.geoJSON(kansasFeature, { style: { color: '#ffd700', weight: 4, fill: false, opacity: 1 } }).addTo(map);
+
+                // Trigger initialization immediately on page load
+                initDashboard();
                 
 
         // ==========================================
@@ -177,9 +180,6 @@
             await loadForecastData(); // 1st: Fetch GenCast correlation data
             await loadStationsCSV();  // 2nd: Draw the map with appropriate colors
         }
-        
-        // Trigger initialization immediately on page load
-        initDashboard();
         
         async function loadStationsCSV() {
             try {
