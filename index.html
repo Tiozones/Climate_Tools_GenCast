@@ -154,9 +154,6 @@
                 L.TileLayer.boundaryCanvas(osmUrl, { boundary: kansasFeature, attribution: '&copy; OpenStreetMap' }).addTo(map);
                 L.geoJSON(kansasFeature, { style: { color: '#ffd700', weight: 4, fill: false, opacity: 1 } }).addTo(map);
                 
-                // Initialize CSV loading after map is ready
-                loadStationsCSV();
-            });
 
         // ==========================================
         // 2. CSV PARSER & STATION LOADER
@@ -239,9 +236,6 @@
                 console.error("Error loading forecast data:", error);
             }
         }
-        
-        // Call the function immediately so data is ready before the user clicks anything
-        loadForecastData();
         
         function buildStations(stationList) {
             const listElement = document.getElementById("station-list");
@@ -407,20 +401,37 @@
             const mesonetGroundTruth = forecastData[stationName].obs;
             const genCastForecast = forecastData[stationName].fcst;
         
-            // METRIC CALCULATION (Mean Absolute Error - MAE)
+            // METRIC CALCULATION: MAE (Magnitude) and Bias (Direction)
             let sumErrors = 0;
-            for (let i = 0; i < mesonetGroundTruth.length; i++) {
-                sumErrors += Math.abs(mesonetGroundTruth[i] - genCastForecast[i]);
-            }
-            const mae = (sumErrors / mesonetGroundTruth.length).toFixed(1);
+            let sumBias = 0;
+            const numPoints = mesonetGroundTruth.length;
         
-            // INTUITIVE TEXT GENERATION BASED ON PERFORMANCE
-            if (mae <= 2.0) {
-                feedbackText.innerHTML = `🌟 <b>High Accuracy:</b> The GenCast model showed excellent geographical performance here, with a historical mean error of only <b>${mae} °C</b> compared to Mesonet.`;
-            } else if (mae <= 4.0) {
-                feedbackText.innerHTML = `👍 <b>Moderate Accuracy:</b> The model reflected the climate trend acceptably, presenting a mean deviation of <b>${mae} °C</b> from ground measurements.`;
+            for (let i = 0; i < numPoints; i++) {
+                let diff = genCastForecast[i] - mesonetGroundTruth[i]; // GenCast minus Mesonet
+                sumBias += diff;
+                sumErrors += Math.abs(diff);
+            }
+            
+            const mae = (sumErrors / numPoints).toFixed(1);
+            const bias = (sumBias / numPoints).toFixed(1);
+        
+            // DETERMINE THE BIAS DIRECTION TEXT
+            let biasText = "";
+            if (bias > 0.3) {
+                biasText = ` On average, it tends to <b style="color:#ff6b6b;">overpredict</b> the heat by +${bias} °C.`;
+            } else if (bias < -0.3) {
+                biasText = ` On average, it tends to <b style="color:#4dabf7;">underpredict</b> the temperature by ${bias} °C.`;
             } else {
-                feedbackText.innerHTML = `⚠️ <b>Low Accuracy:</b> The model presents noise or climate bias for these coordinates, missing forecasts by an average of <b>${mae} °C</b>.`;
+                biasText = ` The predictions are well-balanced with no major hot or cold bias.`;
+            }
+        
+            // INTUITIVE TEXT GENERATION BASED ON PERFORMANCE (Combining MAE and Bias)
+            if (mae <= 2.0) {
+                feedbackText.innerHTML = `🌟 <b>High Accuracy:</b> The GenCast model showed excellent geographical performance here, missing by an average of only <b>${mae} °C</b>.` + biasText;
+            } else if (mae <= 4.0) {
+                feedbackText.innerHTML = `👍 <b>Moderate Accuracy:</b> The model reflected the climate trend acceptably, with a mean deviation of <b>${mae} °C</b>.` + biasText;
+            } else {
+                feedbackText.innerHTML = `⚠️ <b>Low Accuracy:</b> The model presents climate noise for these coordinates, missing forecasts by an average of <b>${mae} °C</b>.` + biasText;
             }
                 
             const trace1 = {
