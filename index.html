@@ -114,6 +114,7 @@
     <div id="plot-panel" class="floating-panel">
         <button class="close-btn" onclick="closeGraph()">X</button>
         <h3 style="margin-top: 0; color: #ffd700;" id="plot-title">Forecast Accuracy</h3>
+        <p id="plot-feedback" style="font-size: 13px; line-height: 1.4; color: #ddd; margin-bottom: 15px;"></p>
         <div id="correlation-plot" style="width: 100%; height: 300px;"></div>
     </div>
     <!-- MAP CONTAINER -->
@@ -174,7 +175,15 @@
                 );
             });
         }
-
+        // Sequential initialization to guarantee GenCast data loads before the map markers
+        async function initDashboard() {
+            await loadForecastData(); // 1st: Fetch GenCast correlation data
+            await loadStationsCSV();  // 2nd: Draw the map with appropriate colors
+        }
+        
+        // Trigger initialization immediately on page load
+        initDashboard();
+        
         async function loadStationsCSV() {
             try {
                 // Fetch the file from the same directory as this HTML file
@@ -236,21 +245,27 @@
         
         function buildStations(stationList) {
             const listElement = document.getElementById("station-list");
-            listElement.innerHTML = ""; // Clear list
-            
-            var markerStyle = { radius: 6, fillColor: "#ff0000", color: "#ffffff", weight: 1.5, opacity: 1, fillOpacity: 0.9 };
-
-            // Sort alphabetically by NAME before building UI
+            listElement.innerHTML = ""; 
+        
             stationList.sort((a, b) => a.NAME.localeCompare(b.NAME));
-
+        
             stationList.forEach(station => {
                 const lat = Number(station.LATITUDE);
                 const lon = Number(station.LONGITUDE);
-
-                if (!Number.isFinite(lat) || !Number.isFinite(lon)) return; // Skip invalid rows
-
-                // Create Map Marker
+                if (!Number.isFinite(lat) || !Number.isFinite(lon)) return; 
+        
+                // COLOR LOGIC: Check if GenCast data exists for this specific station
+                const hasGenCast = forecastData[station.NAME] && forecastData[station.NAME].obs.length > 0;
+                
+                // Red if data exists, Dark Grey if missing
+                const fillColor = hasGenCast ? "#ff0000" : "#666666"; 
+                const borderColor = hasGenCast ? "#ffffff" : "#444444";
+                
+                var markerStyle = { radius: 6, fillColor: fillColor, color: borderColor, weight: 1.5, opacity: 1, fillOpacity: 0.9 };
+        
                 var m = L.circleMarker([lat, lon], markerStyle).addTo(map);
+                
+                // ... (The rest of the bindPopup function remains the same) ...
                 
                 m.bindPopup(
                     '<h3 class="popup-title">' + station.NAME + '</h3>' +
@@ -375,22 +390,39 @@
             document.getElementById("plot-title").textContent = `GenCast vs Mesonet: ${stationName}`;
             
             const plotContainer = document.getElementById("correlation-plot");
+            const feedbackText = document.getElementById("plot-feedback"); // Select the feedback div
         
-            // FALLBACK: If station has no GenCast data
+            // IF NO GENCAST DATA EXISTS
             if (!forecastData[stationName] || forecastData[stationName].obs.length === 0) {
+                feedbackText.innerHTML = "";
                 plotContainer.innerHTML = 
-                    "<div style='display:flex; height:100%; align-items:center; justify-content:center; color:#aaa; text-align:center; padding: 20px; box-sizing: border-box;'>" +
-                    "GenCast model correlation is still being implemented for this location.</div>";
+                    "<div style='display:flex; height:100%; align-items:center; justify-content:center; color:#aaa; text-align:center; padding: 20px;'>" +
+                    "GenCast predictive model correlation is still being implemented for these coordinates.</div>";
                 return; 
             }
         
-            // SUCCESS: Station has data, clear any previous messages to render Plotly
+            // IF DATA EXISTS: Clear previous messages
             plotContainer.innerHTML = ""; 
         
-            // Retrieve the real arrays populated by the CSV parser
             const mesonetGroundTruth = forecastData[stationName].obs;
             const genCastForecast = forecastData[stationName].fcst;
         
+            // METRIC CALCULATION (Mean Absolute Error - MAE)
+            let sumErrors = 0;
+            for (let i = 0; i < mesonetGroundTruth.length; i++) {
+                sumErrors += Math.abs(mesonetGroundTruth[i] - genCastForecast[i]);
+            }
+            const mae = (sumErrors / mesonetGroundTruth.length).toFixed(1);
+        
+            // INTUITIVE TEXT GENERATION BASED ON PERFORMANCE
+            if (mae <= 2.0) {
+                feedbackText.innerHTML = `🌟 <b>High Accuracy:</b> The GenCast model showed excellent geographical performance here, with a historical mean error of only <b>${mae} °C</b> compared to Mesonet.`;
+            } else if (mae <= 4.0) {
+                feedbackText.innerHTML = `👍 <b>Moderate Accuracy:</b> The model reflected the climate trend acceptably, presenting a mean deviation of <b>${mae} °C</b> from ground measurements.`;
+            } else {
+                feedbackText.innerHTML = `⚠️ <b>Low Accuracy:</b> The model presents noise or climate bias for these coordinates, missing forecasts by an average of <b>${mae} °C</b>.`;
+            }
+                
             const trace1 = {
                 x: mesonetGroundTruth, 
                 y: genCastForecast,
