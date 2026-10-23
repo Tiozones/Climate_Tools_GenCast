@@ -425,23 +425,24 @@
             const bias = (sumBias / numPoints).toFixed(1);
         
             // DETERMINE THE BIAS DIRECTION TEXT
-            let biasText = "";
+            let forecastTrendText = "";
             if (bias > 0.3) {
-                biasText = ` On average, it tends to <b style="color:#ff6b6b;">overpredict</b> the heat by +${bias} °C.`;
+                forecastTrendText = `The model exhibits a warm bias, overpredicting the heat by an average of <b style="color:#ff6b6b;">+${bias} °C</b>.`;
             } else if (bias < -0.3) {
-                biasText = ` On average, it tends to <b style="color:#4dabf7;">underpredict</b> the temperature by ${bias} °C.`;
+                // Math.abs() removes the negative sign so it reads naturally
+                forecastTrendText = `The model exhibits a cool bias, underpredicting the temperature by an average of <b style="color:#4dabf7;">${Math.abs(bias).toFixed(1)} °C</b>.`;
             } else {
-                biasText = ` The predictions are well-balanced with no major hot or cold bias.`;
+                forecastTrendText = `The predictions are well-balanced with no major hot or cold bias.`;
             }
         
-            // INTUITIVE TEXT GENERATION BASED ON PERFORMANCE (Combining MAE and Bias)
-            if (mae <= 2.0) {
-                feedbackText.innerHTML = `🌟 <b>High Accuracy:</b> The GenCast model showed excellent geographical performance here, missing by an average of only <b>${mae} °C</b>.` + biasText;
-            } else if (mae <= 4.0) {
-                feedbackText.innerHTML = `👍 <b>Moderate Accuracy:</b> The model reflected the climate trend acceptably, with a mean deviation of <b>${mae} °C</b>.` + biasText;
-            } else {
-                feedbackText.innerHTML = `⚠️ <b>Low Accuracy:</b> The model presents climate noise for these coordinates, missing forecasts by an average of <b>${mae} °C</b>.` + biasText;
-            }
+            // GENERATE THE BULLETED STATEMENT
+            feedbackText.innerHTML = `
+                <b>5-Year Historical Performance:</b>
+                <ul style="margin-top: 5px; margin-bottom: 0; padding-left: 20px;">
+                    <li><b>Average Error:</b> The forecast generally misses the actual ground temperature by <b>${mae} °C</b>.</li>
+                    <li><b>Forecast Trend:</b> ${forecastTrendText}</li>
+                </ul>
+            `;
                 
             // CALCULATE RESIDUALS FOR THE HISTOGRAM
             const residuals = [];
