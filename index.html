@@ -383,10 +383,10 @@
 
         function openGraph(stationName) {
             // NEW: Pan the map to push the marker to the top of the screen
-            if (markers[stationName]) {
-                const latLng = markers[stationName].latLng;
+            //if (markers[stationName]) {
+                //const latLng = markers[stationName].latLng;
                 // Adding ~0.6 to the latitude centers the camera north of the station
-                map.flyTo([latLng.lat + 0.6, latLng.lng], 8); 
+                //map.flyTo([latLng.lat + 0.6, latLng.lng], 8); 
             }
             
             document.getElementById("plot-panel").style.display = "flex";
