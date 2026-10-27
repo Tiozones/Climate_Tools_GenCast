@@ -39,27 +39,32 @@
         #title-panel h2 { margin: 0 0 5px 0; font-size: 20px; color: #ffd700; }
         #title-panel p { margin: 0 0 15px 0; font-size: 13px; color: #ccc; }
 
-        #logo-panel {
+         /* Individual Style box */
+        .logo-card {
+            position: absolute;
             top: 35px;
-            left: 340px; /* Position */
-            width: 280px; /* same width (#title-panel) */
+            height: 48px; /* Altura fixa para alinhar perfeitamente com o painel esquerdo */
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            background: transparent; /* no background */
-            backdrop-filter: none;
-            border: none;
-            box-shadow: none;
-            padding: 0 5px;
+            justify-content: center;
+            padding: 8px 12px;
         }
 
-        /* Standart size */
+        /* K-State Logo Box  */
+        #kstate-logo-card {
+            left: 340px; 
+        }
+
+        /* DART Logo Box  */
+        #dart-logo-card {
+            left: 460px; /* Ajuste a distância se quiser mais ou menos espaço entre as caixas */
+        }
+
+        /* logo size */
         .brand-logo {
-            height: 100px;
+            height: 28px;
             width: auto;
             object-fit: contain;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.65)); /* light shade */
         }
         .toggle-btn {
             background: #333; color: #fff; border: 1px solid #555;
@@ -125,15 +130,17 @@
     </div>
 
     <!-- LOGO PANEL  -->
-    <div id="logo-panel" class="floating-panel">
-        <!-- K-State Logo (White Version Active) -->
-        <img src="kstate.jpg" alt="K-State Logo" class="brand-logo">
+    <div id="kstate-logo-card" class="floating-panel logo-card">
+        <!-- Active K-State Logo (White Version) -->
+        <img src="kstateT.png" alt="K-State Logo" class="brand-logo">
         
-        <!-- K-State Logo (Black Version - Commented Out) -->
-        <!-- <img src="kstateB.jpg" alt="K-State Logo" class="brand-logo"> -->
-        
-        <!-- DART Logo -->
-        <img src="dart.png" alt="DART Logo" class="brand-logo">
+        <!-- Alternative K-State Logo (Black Version - Commented Out) -->
+        <!-- <img src="university_logo_system_university_wordmark_black.jpg" alt="K-State Logo" class="brand-logo"> -->
+    </div>
+
+    <!-- Caixa do Logo da DART -->
+    <div id="dart-logo-card" class="floating-panel logo-card">
+        <img src="dart_branco.png" alt="DART Logo" class="brand-logo">
     </div>
 
     <div id="gps-panel" class="floating-panel">
