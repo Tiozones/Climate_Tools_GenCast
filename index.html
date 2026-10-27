@@ -38,7 +38,22 @@
         #title-panel { top: 20px; left: 20px; width: 280px; }
         #title-panel h2 { margin: 0 0 5px 0; font-size: 20px; color: #ffd700; }
         #title-panel p { margin: 0 0 15px 0; font-size: 13px; color: #ccc; }
-        
+
+        #logo-panel {
+            top: 20px;
+            left: 325px; /* Logo panel to the right side of title */
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+        }
+
+        /* Padroniza o tamanho dos dois logos igualmente */
+        .brand-logo {
+            height: 26px;
+            width: auto;
+            object-fit: contain;
+        }
         .toggle-btn {
             background: #333; color: #fff; border: 1px solid #555;
             padding: 8px; width: 100%; border-radius: 5px;
@@ -105,13 +120,13 @@
     <!-- LOGO PANEL  -->
     <div id="logo-panel" class="floating-panel">
         <!-- K-State Logo (White Version Active) -->
-        <img src="kstate.jpg" alt="K-State Logo" style="max-height: 28px; width: auto; object-fit: contain;">
+        <img src="kstate.jpg" alt="K-State Logo" class="brand-logo">
         
         <!-- K-State Logo (Black Version - Commented Out) -->
-        <!-- <img src="kstateB.jpg" alt="K-State Logo" style="max-height: 28px; width: auto; object-fit: contain;"> -->
+        <!-- <img src="kstateB.jpg" alt="K-State Logo" class="brand-logo"> -->
         
         <!-- DART Logo -->
-        <img src="dart.png" alt="DART Logo" style="max-height: 28px; width: auto; object-fit: contain; background: white; padding: 2px; border-radius: 4px;">
+        <img src="dart.png" alt="DART Logo" class="brand-logo" style="background: white; padding: 2px; border-radius: 4px;">
     </div>
 
     <div id="gps-panel" class="floating-panel">
