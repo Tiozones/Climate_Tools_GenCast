@@ -41,18 +41,25 @@
 
         #logo-panel {
             top: 20px;
-            left: 325px; /* Logo panel to the right side of title */
+            left: 320px; /* Position */
+            width: 280px; /* same width (#title-panel) */
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 15px;
+            justify-content: space-between;
+            gap: 10px;
+            background: transparent; /* no background */
+            backdrop-filter: none;
+            border: none;
+            box-shadow: none;
+            padding: 0 5px;
         }
 
-        /* Padroniza o tamanho dos dois logos igualmente */
+        /* Standart size */
         .brand-logo {
-            height: 26px;
+            height: 32px;
             width: auto;
             object-fit: contain;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.65)); /* light shade */
         }
         .toggle-btn {
             background: #333; color: #fff; border: 1px solid #555;
@@ -126,7 +133,7 @@
         <!-- <img src="kstateB.jpg" alt="K-State Logo" class="brand-logo"> -->
         
         <!-- DART Logo -->
-        <img src="dart.png" alt="DART Logo" class="brand-logo" style="background: white; padding: 2px; border-radius: 4px;">
+        <img src="dart.png" alt="DART Logo" class="brand-logo">
     </div>
 
     <div id="gps-panel" class="floating-panel">
